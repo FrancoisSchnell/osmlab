@@ -1,0 +1,179 @@
+#!/usr/bin/python
+
+################################################################################
+#
+# Author:  francois schnell
+#          francois.schnell@gmail.com  http://francois.schnell.free.fr
+#                      
+# This script is released under the GPL license v2
+#
+# Scans an OSM diff file and extract useful data (a list of Python dictionaries)
+# As a result it output a KML file to visualize mapping activity of OSM 
+# ( It is not intended for mapping 
+# but just to give an awareness of the OSM activity ) 
+################################################################################
+#my todo-list: 
+# - add params CLI verbose (and debug?)
+# - make a slim down version of the kml for small config PC or big OSM files
+# - add a time slider option in GE
+# - unzip and test for linux and darwin
+################################################################################
+
+from xml.etree import ElementTree as ET
+from operator import itemgetter
+import time
+
+import KML
+
+class OSMaware(object):
+    """ A class to extract mapping activity as KML from an OSM diff file"""
+    
+    def __init__(self,fileOSM,debug=False,verbose=False):
+        
+        tree=ET.parse(fileOSM)
+        root=tree.getroot()
+        # Data structure
+        self.osmData=[]    # a list to contain them all
+        self.osmNodes=[]   # a list to contain data about nodes (python dictionaries)
+        self.osmWays=[]    # a list to contain data about ways (python dictionaries)
+        self.statsUsers={} # a dict. to contain data about users stats
+        #with key user and nodes of kind create modify delete to increment
+        self.osmData.append(self.osmNodes)
+        self.osmData.append(self.osmWays)
+        self.osmData.append(self.osmWays)
+        # feedback parameters
+        self.debug=debug
+        self.verbose=verbose
+
+        ## Extracting useful data from the OSM file
+        print "Parsing OSM file, could take some time..."        
+        for tag in root:
+            if self.debug: 
+                time.sleep(0.1)
+                print "Element: ",tag, "Type=", tag.tag
+            aNodeList=tag.findall("node")
+            if len(aNodeList) !=0: 
+                if self.debug: print "Elements of type 'node': ", aNodeList
+                for i in aNodeList:
+                    if self.debug:
+                        print "Type=", tag.tag,
+                        print "ID node=",i.attrib.get("id"),
+                        print "latitude=",i.attrib.get("lat"),
+                        print "longitude=",i.attrib.get("lon"),
+                        print "timestamp=",i.attrib.get("timestamp"),
+                        print repr("user=",i.attrib.get("user"))
+                    self.osmNodes.append({
+                                 'idNode':i.attrib.get("id"),
+                                 'type':tag.tag,
+                                 'latitude':i.attrib.get("lat"),
+                                 'longitude':i.attrib.get("lon"),
+                                 'timestamp':i.attrib.get("timestamp"),
+                                 'user':i.attrib.get("user"),
+                                 })
+                    user=i.attrib.get("user")
+                    nodeType=tag.tag
+                    if self.statsUsers.has_key(user)==False:
+                        self.statsUsers[user]=[0,0,0,0]#total,created,modified,deleted
+                    if self.statsUsers.has_key(user):
+                        self.statsUsers[user][0]+=1
+                        if nodeType=="create": self.statsUsers[user][1]+=1
+                        if nodeType=="modify": self.statsUsers[user][2]+=1
+                        if nodeType=="delete": self.statsUsers[user][3]+=1                        
+            
+            aWayList=tag.findall("way")
+            if len(aWayList) != 0:
+                for i in aWayList:
+                    self.osmWays.append({
+                                    'type':tag.tag,
+                                    'idWay':i.attrib.get("id"),
+                                    'timestamp':i.attrib.get("timestamp"),
+                                    'user':i.attrib.get("user"),
+                                         })
+                    #thisWayNodes=i.getiterator(tag="nd")
+        #print self.statsUsers
+        print "Number of contributors (users):", len(self.statsUsers)
+        print "Number of Nodes created, deleted or modified:", len(self.osmNodes)
+    
+    def globalStats(self,name="Stats Summary"):
+        """ returns html global stats"""
+        stats=u"Total number of users: "+str(len(self.statsUsers))+"<br>"
+        stats+=u"Total number of nodes created, deleted or modified: "+ str(len(self.osmNodes))+"<br>"
+        stats+=u"Total number of ways created, deleted or modified: "+ str(len(self.osmWays))+"<br><br>"
+        stats+="<table border='1' padding='3' width='600'>"
+        stats+="<tr><td>Author</td><td>Total (nodes)</td><td>Created</td><td>Modified</td><td>Deleted</td></tr>"
+        usersResult=sorted(self.statsUsers.items(), key=itemgetter(1),reverse=True)
+        for u in usersResult:
+            thisUser=unicode(u[0])
+            if thisUser !="None":
+                stats+=u'<tr><td><a href="http://www.openstreetmap.org/user/'+thisUser\
+                +'">'+thisUser+"</a></td>"
+            else:
+                stats+="<tr><td>None</td>"
+            stats+=u"<td>"+str(u[1][0])+"</td><td>"+str(u[1][1])\
+            +"</td><td>"+str(u[1][2])+"</td><td>"+str(u[1][3])+"</tr>"
+        return stats
+                                        
+    def createKml(self,kmlFileName="output"):
+        """ Creating KML output"""
+        
+        print "Creating KML file..."
+        myKml=KML.KML(kmlFileName)
+        statsDescription=self.globalStats(name=kmlFileName)
+        #print repr(statsDescription)
+        myKml.placemarkDescriptive(description=statsDescription,name=kmlFileName)
+        
+        for aType in ["create","modify","delete"]:  
+            
+            myKml.folderHead(aType)
+            for node in self.osmNodes:
+                if node["type"]==aType:
+                    if self.verbose==True:
+                        print node["latitude"], node["longitude"],node["idNode"],\
+                                     node["user"], node["timestamp"],node["type"]
+                    if node["user"]==None: node["user"]="None"
+                    myKml.placemark(node["latitude"],node["longitude"],node["idNode"],
+                            node["user"],node["timestamp"],node["type"])
+            myKml.folderTail()
+                
+        myKml.close()
+
+if __name__=="__main__":
+    
+    import os, sys
+    from optparse import OptionParser
+    # command line options
+    parser=OptionParser()
+    parser.add_option("-i", "--input",dest="osmInput",help="OSM input file")
+    parser.add_option("-o", "--output",dest="kmlOutput",help="KML output filename (without the .kml extension)")
+    (options,args)=parser.parse_args()
+    
+    # If an html location is given for the input OSM
+    if (options.osmInput.find("http://")!=-1):
+        print "found http input, attempt to retrieve it via wget..."
+        os.system('wget %s '%options.osmInput)
+        options.osmInput=os.curdir+"/"+options.osmInput.split("/")[-1]
+        print options.osmInput
+    
+    # If bz2 or gz archive exist uncompress to osc file using 7zip CLI on win
+    if (options.osmInput.find(".bz2")>0) or (options.osmInput.find(".BZ2")>0)\
+        or (options.osmInput.find(".gz")>0) or (options.osmInput.find(".GZ")>0):
+        archiveType=options.osmInput.split(".")[-1]
+        print "Trying to uncompress the archive of type ."+archiveType
+        if sys.platform == 'win32':
+            # 7za.exe must be installed in the app folder
+            os.system('7za.exe x -y -o"%s" "%s" ' % (os.path.dirname(options.osmInput),options.osmInput))
+        if sys.platform.find("linux")!=-1:
+            print "todo unzip/test for linux"
+            #os.system('bzip2 -d planet.osm.bz2')
+        if sys.platform=="darwin":
+            print "todo unzip/tests for darwin"
+        options.osmInput=options.osmInput.rstrip("."+archiveType)
+        print "File uncompressed: ", options.osmInput
+        
+    if options.kmlOutput==None: options.kmlOutput=os.path.basename(options.osmInput).rstrip(".osc")
+        
+    myAwareness=OSMaware(options.osmInput,debug=False,verbose=False)
+    myAwareness.createKml(options.kmlOutput)
+    
+    print "Finished"
+    
