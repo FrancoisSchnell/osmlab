@@ -6,13 +6,18 @@
 #                           http://francois.schnell.free.fr  
 # This script is released under the GPL license v2
 #
-# A module to create a kml for OSM aware
+# A module to create a KML (in particular for OSM aware)
 ################################################################################
 
 class KML(object):
-    """ Creates a KML file for OSMaware script"""
+    """ 
+    Creates a KML file (in particular for OSMaware script)
+    """
     
     def __init__(self,name="default_name"):
+        """
+        Create and write the KML head 
+        """
         self.f=open(name+".kml","wb")
         kmlHead_p1=u"""<?xml version="1.0" encoding="UTF-8"?>
 <kml xmlns="http://earth.google.com/kml/2.1">
@@ -61,12 +66,13 @@ class KML(object):
         </ListStyle>
 </Style> 
 """
-        #self.f.write(kmlHead_p1+kmlHead_p2)
         kmlHead=kmlHead_p1+kmlHead_p2
         self.f.write(kmlHead.encode("utf-8"))
     
     def placemark(self,latitude="0",longitude="0",idNode="0",user="",timestamp="",type=""):
-        """ Create and write a placemark at given latitude/longitude"""
+        """ 
+        Create and write a placemark at given latitude/longitude
+        """
         
         if type=="create": placemarkStyle="sh_ylw-pushpin"
         if type=="modify": placemarkStyle="sh_blue-pushpin"
@@ -88,8 +94,10 @@ class KML(object):
         self.f.write(content.encode("utf-8"))
     
     def placemarkDescriptive(self,description="",name="Stats"):
-        """ Create and write a descriptive placemark with the given
-        html in the description argument (no need for lat/long) and the name"""
+        """ 
+        Create and write a description  with the given
+        html in the description argument (no need for lat/long) and the name
+        """
         
         content=u"<name>"+name+"</name>\n"+"<Snippet maxLines='0'></Snippet><description>\
         <![CDATA[\n "\
