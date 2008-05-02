@@ -194,10 +194,7 @@ if __name__=="__main__":
         if sys.platform == 'win32':
             # 7za.exe must be installed in the app folder
             os.system('7za.exe x -y -o"%s" "%s" ' % (os.path.dirname(options.osmInput),options.osmInput))
-        if (sys.platform.find("darwin")!=-1):
-            os.system('bzip2 -d "%s"' % options.osmInput)
-        if (sys.platform.find("linux")!=-1):
-            print "todo unzip/test for linux"
+        if (sys.platform.find("darwin")!=-1) or (sys.platform.find("linux")!=-1):
             os.system('bzip2 -d "%s"' % options.osmInput)
         
         options.osmInput=options.osmInput.rstrip("."+archiveType)
