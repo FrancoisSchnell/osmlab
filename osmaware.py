@@ -41,9 +41,6 @@ class OSMaware(object):
         """
         Scan the .osc file and gather informations in lists and dictionaries (see code)
         """
-        
-        tree=ET.parse(fileOSM)
-        root=tree.getroot()
         # Data structure
         self.osmData=[]    # a list to contain them all
         self.osmNodes=[]   # a list to contain data about nodes (python dictionaries)
@@ -57,7 +54,10 @@ class OSMaware(object):
         self.verbose=verbose
 
         ## Extracting useful data from the OSM file
-        print "Parsing OSM file..."        
+        print "Parsing OSM file..."     
+        tree=ET.parse(fileOSM)
+        root=tree.getroot()
+                   
         for tag in root:
             if self.debug: 
                 time.sleep(0.1)
@@ -67,7 +67,6 @@ class OSMaware(object):
                 if self.debug: print "Elements of type 'node': ", aNodeList
                 
                 # Creating nodes list and user's stats
-                print "Creating nodes list and users stats..."
                 for i in aNodeList:
                     if self.debug:
                         print "Type=", tag.tag,
@@ -97,7 +96,6 @@ class OSMaware(object):
                         if nodeType=="delete": self.statsUsers[user][3]+=1                        
             
             # Creating ways list
-            print "Creating ways list..."
             aWayList=tag.findall("way")
             if len(aWayList) != 0:
                 for i in aWayList:
