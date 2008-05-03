@@ -98,14 +98,25 @@ class KML(object):
         Create and write a description  with the given
         html in the description argument (no need for lat/long) and the name
         """
-        
         content=u"<name>"+name+"</name>\n"+"<Snippet maxLines='0'></Snippet><description>\
         <![CDATA[\n "\
         +"<table border='1' padding='3' width='600'><tr><td> "+ description\
         + "</td></tr></table>"+"\n]]></description>"
         self.f.write(content.encode("utf-8"))
-         
+        
+    def placemarkPath(self,pathName,coordinates):
+        """
+        Creates a placemark to show a path (coordinates)
+        """
+        content=u"<Placemark>\n<name>"+unicode(pathName)+"</name>\n"\
+        +"<styleUrl>#lineStyle</styleUrl>\n<LineString>\n<tessellate>1</tessellate>"\
+        +"<coordinates>"+coordinates+"</coordinates>\n</LineString>\n</Placemark>"
+        self.f.write(content.encode("utf-8"))
+        
     def folderHead(self,folderName):
+        """
+        Begin a new folder
+        """
         folderTags=u"\n\n<Folder><name>"+folderName+"</name>\n"
         self.f.write(folderTags.encode("utf-8"))
     
