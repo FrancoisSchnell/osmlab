@@ -21,7 +21,6 @@
 # - make a slim down version of the kml for small config PC or big OSM files
 # - KML: 2D genre, 3D genre, etc
 # - add a time slider option in GE
-# - unzip and test for linux and darwin
 ################################################################################
 
 from xml.etree import ElementTree as ET
@@ -88,13 +87,20 @@ class OSMaware(object):
                     user=i.attrib.get("user")
                     nodeType=tag.tag
                     if self.statsUsers.has_key(user)==False:
-                        self.statsUsers[user]=[0,0,0,0]#total,created,modified,deleted
+                        #total,created,modified,deleted nodes and list of positions for this user
+                        self.statsUsers[user]=[0,0,0,0,[[],[],[]]]
                     if self.statsUsers.has_key(user):
                         self.statsUsers[user][0]+=1
-                        if nodeType=="create": self.statsUsers[user][1]+=1
-                        if nodeType=="modify": self.statsUsers[user][2]+=1
-                        if nodeType=="delete": self.statsUsers[user][3]+=1                        
-            
+                        if nodeType=="create": 
+                            self.statsUsers[user][1]+=1
+                            self.statsUsers[user][4][0].append((i.attrib.get("lat"),i.attrib.get("lon")))
+                        if nodeType=="modify": 
+                            self.statsUsers[user][2]+=1
+                            self.statsUsers[user][4][1].append((i.attrib.get("lat"),i.attrib.get("lon")))
+                        if nodeType=="delete": 
+                            self.statsUsers[user][3]+=1
+                            self.statsUsers[user][4][2].append((i.attrib.get("lat"),i.attrib.get("lon")))
+                                                
             # Creating ways list
             aWayList=tag.findall("way")
             if len(aWayList) != 0:
@@ -107,6 +113,7 @@ class OSMaware(object):
                                          })
                     #thisWayNodes=i.getiterator(tag="nd")
 
+        #for userName, userStat in self.statsUsers.iteritems(): print userName, userStat
         print "Number of contributors (users):", len(self.statsUsers)
         print "Number of Nodes created, deleted or modified:", len(self.osmNodes)
     
@@ -137,9 +144,11 @@ class OSMaware(object):
         
         return stats
                                         
-    def createKml(self,kmlFileName="output"):
+    def createKmlV1(self,kmlFileName="output"):
         """ 
-        Creates the KML output
+        Creates a detailed KML output (one placemark per node)
+        placed in 3 folders ("created","modified","deleted")
+        Suitable for reasonnably small osc files
         """
         
         print "Creating KML file..."
@@ -159,7 +168,35 @@ class OSMaware(object):
                             node["user"],node["timestamp"],node["type"])
             myKml.folderTail()
         myKml.close()
-
+        
+    def createKmlV2(self,kmlFileName="output"):
+        """
+        A lighter kml version focused on users
+        """
+        
+        print "Creating KML file..."
+        myKml=KML.KML(kmlFileName)
+        statsDescription=self.globalStats()
+        myKml.placemarkDescriptive(description=statsDescription,name=kmlFileName)
+        
+        for userName, userStat in self.statsUsers.iteritems():
+            myKml.folderHead(unicode(userName))
+            # Extract created nodes-"path" for this user  
+            pathCreated=""
+            for coordinate in self.statsUsers[userName][4][0]:
+                pathCreated=pathCreated+coordinate[1]+","+coordinate[0]+",0 "
+            pathModified=""
+            for coordinate in self.statsUsers[userName][4][1]:
+                pathModified=pathModified+coordinate[1]+","+coordinate[0]+",0 "
+            pathDeleted=""
+            for coordinate in self.statsUsers[userName][4][2]:
+                pathDeleted=pathDeleted+coordinate[1]+","+coordinate[0]+",0 "
+            myKml.placemarkPath(pathName="Created",coordinates=pathCreated)
+            myKml.placemarkPath(pathName="Modified",coordinates=pathModified)
+            myKml.placemarkPath(pathName="Deleted",coordinates=pathDeleted)
+            myKml.folderTail()
+        myKml.close()
+                        
 if __name__=="__main__":
     
     """
@@ -203,7 +240,7 @@ if __name__=="__main__":
     if options.kmlOutput==None: options.kmlOutput=os.path.basename(options.osmInput).rstrip(".osc")
         
     myAwareness=OSMaware(options.osmInput,debug=False,verbose=False)
-    myAwareness.createKml(options.kmlOutput)
+    myAwareness.createKmlV1(options.kmlOutput)
     
     print "Finished"
     
