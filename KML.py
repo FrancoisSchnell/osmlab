@@ -25,45 +25,63 @@ class KML(object):
 <name>"""+name+"""</name>"""
 
         kmlHead_p2="""
-<Style id="lineStyle">
+<Style id="lineStyleCreated">
 <PolyStyle>
-<color>3feeee17</color>
+<color>4400ffff</color>
 </PolyStyle>
 <LineStyle>
-<color>99eeee17</color>
-<width>6</width>
+<color>cc00ffff</color>
+<width>2</width>
+</LineStyle>
+</Style>
+<Style id="lineStyleModified">
+<PolyStyle>
+<color>44ff0000</color>
+</PolyStyle>
+<LineStyle>
+<color>ccff0000</color>
+<width>3</width>
+</LineStyle>
+</Style>
+<Style id="lineStyleDeleted">
+<PolyStyle>
+<color>440000ff</color>
+</PolyStyle>
+<LineStyle>
+<color>cc0000ff</color>
+<width>4</width>
 </LineStyle>
 </Style>
 <Style id="sh_ylw-pushpin">
-        <IconStyle>
-            <scale>1.3</scale>
-            <Icon>
-                <href>http://maps.google.com/mapfiles/kml/pushpin/ylw-pushpin.png</href>
-            </Icon>
-            <hotSpot x="20" y="2" xunits="pixels" yunits="pixels"/>
-        </IconStyle>
+<IconStyle>
+<scale>1.3</scale>
+<Icon>
+<href>http://maps.google.com/mapfiles/kml/pushpin/ylw-pushpin.png</href>
+</Icon>
+<hotSpot x="20" y="2" xunits="pixels" yunits="pixels"/>
+</IconStyle>
 </Style>
-    <Style id="sh_red-pushpin">
-        <IconStyle>
-            <scale>1.3</scale>
-            <Icon>
-                <href>http://maps.google.com/mapfiles/kml/pushpin/red-pushpin.png</href>
-            </Icon>
-            <hotSpot x="20" y="2" xunits="pixels" yunits="pixels"/>
-        </IconStyle>
-        <ListStyle>
-        </ListStyle>
+<Style id="sh_red-pushpin">
+<IconStyle>
+<scale>1.3</scale>
+<Icon>
+<href>http://maps.google.com/mapfiles/kml/pushpin/red-pushpin.png</href>
+</Icon>
+<hotSpot x="20" y="2" xunits="pixels" yunits="pixels"/>
+</IconStyle>
+<ListStyle>
+    </ListStyle>
 </Style>
 <Style id="sh_blue-pushpin">
-        <IconStyle>
-            <scale>1.3</scale>
-            <Icon>
-                <href>http://maps.google.com/mapfiles/kml/pushpin/blue-pushpin.png</href>
-            </Icon>
-            <hotSpot x="20" y="2" xunits="pixels" yunits="pixels"/>
-        </IconStyle>
-        <ListStyle>
-        </ListStyle>
+<IconStyle>
+<scale>1.3</scale>
+<Icon>
+<href>http://maps.google.com/mapfiles/kml/pushpin/blue-pushpin.png</href>
+</Icon>
+<hotSpot x="20" y="2" xunits="pixels" yunits="pixels"/>
+</IconStyle>
+<ListStyle>
+</ListStyle>
 </Style> 
 """
         kmlHead=kmlHead_p1+kmlHead_p2
@@ -98,18 +116,22 @@ class KML(object):
         Create and write a description  with the given
         html in the description argument (no need for lat/long) and the name
         """
-        content=u"<name>"+name+"</name>\n"+"<Snippet maxLines='0'></Snippet><description>\
-        <![CDATA[\n "\
+        content=u"\n<name>"+name+"</name>\n"\
+        +"<Snippet maxLines='0'></Snippet>\n"\
+        +"<description>\n"\
+        +"<![CDATA[\n"\
         +"<table border='1' padding='3' width='600'><tr><td> "+ description\
-        + "</td></tr></table>"+"\n]]></description>"
+        + "</td></tr></table>"+"\n]]>\n</description>\n"
         self.f.write(content.encode("utf-8"))
         
-    def placemarkPath(self,pathName,coordinates):
+    def placemarkPath(self,pathName,coordinates,style="lineStyleCreated"):
         """
         Creates a placemark to show a path (coordinates)
         """
+        
         content=u"<Placemark>\n<name>"+unicode(pathName)+"</name>\n"\
-        +"<styleUrl>#lineStyle</styleUrl>\n<LineString>\n<tessellate>1</tessellate>"\
+        +"<styleUrl>#"+style+"</styleUrl>\n<LineString>\n<tessellate>1</tessellate>\n"\
+        +"<altitudeMode>relativeToGround</altitudeMode>\n<extrude>1</extrude>\n"\
         +"<coordinates>"+coordinates+"</coordinates>\n</LineString>\n</Placemark>"
         self.f.write(content.encode("utf-8"))
         
@@ -117,7 +139,7 @@ class KML(object):
         """
         Begin a new folder
         """
-        folderTags=u"\n\n<Folder><name>"+folderName+"</name>\n"
+        folderTags=u"\n<Folder>\n<name>"+folderName+"</name>\n"
         self.f.write(folderTags.encode("utf-8"))
     
     def folderTail(self):
