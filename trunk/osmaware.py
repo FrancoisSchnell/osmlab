@@ -12,16 +12,6 @@
 # ( It is not intended for mapping, just to give an awareness of the OSM activity ) 
 #
 ################################################################################
-# my  todo-list:
-# CLI: 
-# - add 'genre' or 'kind' CLI params to select the genre of KML desired
-# - add verbose and debug params 
-# - add help param
-# - Others:
-# - make a slim down version of the kml for small config PC or big OSM files
-# - KML: 2D genre, 3D genre, etc
-# - add a time slider option in GE
-################################################################################
 
 from xml.etree import ElementTree as ET
 from operator import itemgetter
@@ -179,21 +169,40 @@ class OSMaware(object):
         statsDescription=self.globalStats()
         myKml.placemarkDescriptive(description=statsDescription,name=kmlFileName)
         
-        for userName, userStat in self.statsUsers.iteritems():
-            myKml.folderHead(unicode(userName))
+        for userName, userStat in sorted(self.statsUsers.iteritems()):
+            myKml.folderHead("<![CDATA["+unicode(userName)\
+                             +"("+str(self.statsUsers[userName][0])+")]]>")
             # Extract created nodes-"path" for this user  
+            heightFactor=100
             pathCreated=""
             for coordinate in self.statsUsers[userName][4][0]:
-                pathCreated=pathCreated+coordinate[1]+","+coordinate[0]+",0 "
+                thisNode=coordinate[1]+","+coordinate[0]+","\
+                +str(heightFactor)+" "
+                pathCreated=pathCreated+thisNode
+            if len(self.statsUsers[userName][4][0])!=0: pathCreated=pathCreated+thisNode
             pathModified=""
             for coordinate in self.statsUsers[userName][4][1]:
-                pathModified=pathModified+coordinate[1]+","+coordinate[0]+",0 "
+                thisNode=coordinate[1]+","+coordinate[0]+","\
+                +str(heightFactor)+" "
+                pathModified+=thisNode
+            if len(self.statsUsers[userName][4][1])!=0: pathModified=pathModified+thisNode
             pathDeleted=""
             for coordinate in self.statsUsers[userName][4][2]:
-                pathDeleted=pathDeleted+coordinate[1]+","+coordinate[0]+",0 "
-            myKml.placemarkPath(pathName="Created",coordinates=pathCreated)
-            myKml.placemarkPath(pathName="Modified",coordinates=pathModified)
-            myKml.placemarkPath(pathName="Deleted",coordinates=pathDeleted)
+                thisNode=coordinate[1]+","+coordinate[0]+","\
+                +str(heightFactor)+" "
+                pathDeleted+=thisNode
+            if len(self.statsUsers[userName][4][2])!=0: pathDeleted=pathDeleted+thisNode
+            #print repr(userName)
+            if userName ==None: print "Anonymous users detected"
+            if pathCreated!="":
+                myKml.placemarkPath(pathName="Created("+str(self.statsUsers[userName][1])+")"
+                                    ,coordinates=pathCreated,style="lineStyleCreated")
+            if pathModified!="":
+                myKml.placemarkPath(pathName="Modified("+str(self.statsUsers[userName][2])+")"
+                                   ,coordinates=pathModified,style="lineStyleModified")
+            if pathDeleted!="":
+                myKml.placemarkPath(pathName="Deleted("+str(self.statsUsers[userName][3])+")"
+                                    ,coordinates=pathDeleted,style="lineStyleDeleted")
             myKml.folderTail()
         myKml.close()
                         
@@ -210,8 +219,14 @@ if __name__=="__main__":
     # Command line parameters
     parser=OptionParser()
     parser.add_option("-i", "--input",dest="osmInput",help="OSM input file (.osc)")
-    parser.add_option("-o", "--output",dest="kmlOutput",help="KML output filename (without the .kml extension)")
+    parser.add_option("-o", "--output",dest="kmlOutput",
+                      help="KML output filename (without the .kml extension)")
+    parser.add_option("-k", "--kmlversion",dest="kmlVersion",
+                      help="KML version desired (characterized by a number, see website)")
     (options,args)=parser.parse_args()
+    if options.osmInput==None:
+        print "I need an .osc file, type -h for help"
+        sys.exit(1)
     
     # If an OSM HTML location is given in input fetch it first (wget must be in your path or current folder)
     if (options.osmInput.find("http://")!=-1):
@@ -240,7 +255,11 @@ if __name__=="__main__":
     if options.kmlOutput==None: options.kmlOutput=os.path.basename(options.osmInput).rstrip(".osc")
         
     myAwareness=OSMaware(options.osmInput,debug=False,verbose=False)
-    myAwareness.createKmlV1(options.kmlOutput)
+    
+    if options.kmlVersion=="2":
+        myAwareness.createKmlV2(options.kmlOutput)
+    else:
+        myAwareness.createKmlV1(options.kmlOutput)
     
     print "Finished"
     
