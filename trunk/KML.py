@@ -153,7 +153,6 @@ class KML(object):
         #self.f.write(kmlTail)
         self.f.write(kmlTail.encode("utf-8"))
         self.f.close()
-
     
 if __name__=="__main__":
     print "Engaging..."
