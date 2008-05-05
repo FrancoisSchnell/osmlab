@@ -172,14 +172,49 @@ class OSMaware(object):
         for userName, userStat in sorted(self.statsUsers.iteritems()):
             myKml.folderHead("<![CDATA["+unicode(userName)\
                              +"("+str(self.statsUsers[userName][0])+")]]>")
-            # Extract created nodes-"path" for this user  
-            heightFactor=100
-            pathCreated=""
-            for coordinate in self.statsUsers[userName][4][0]:
-                thisNode=coordinate[1]+","+coordinate[0]+","\
-                +str(heightFactor)+" "
-                pathCreated=pathCreated+thisNode
-            if len(self.statsUsers[userName][4][0])!=0: pathCreated=pathCreated+thisNode
+            for pathType in [0,1,2]:
+                # Extract created nodes-"path" for this user  
+                heightFactor=1000000
+                distanceThreshold=0.001
+                #
+                paths=[] # list of cut paths
+                firstNode=True # a loop index
+                thisPath=""
+                for coordinate in self.statsUsers[userName][4][pathType]:
+                    thisLat=coordinate[0]
+                    thisLong=coordinate[1]
+                    thisNode=thisLong+","+thisLat+","\
+                    +str(heightFactor)+" "
+                    if firstNode:
+                        thisPath+=thisNode
+                        prevLat=thisLat
+                        prevLong=thisLong
+                        firstNode=False
+                    else:
+                        dLon=abs(float(thisLong)-float(prevLong))
+                        dLat=abs(float(thisLat)-float(prevLat))
+                        if (dLon) < distanceThreshold \
+                        or (dLat) < distanceThreshold:
+                            thisPath+=thisNode
+                            prevLat=thisLat
+                            prevLong=thisLong
+                            firstNode=False
+                        else:
+                            paths.append(thisPath)
+                            thisPath=""
+
+                paths.append(thisPath)
+                #print paths            
+                #if len(self.statsUsers[userName][4][0])!=0: pathCreated=pathCreated+thisNode
+                if pathType==0: lineStyle="lineStyleCreated"
+                if pathType==1: lineStyle="lineStyleModified"
+                if pathType==2: lineStyle="lineStyleDeleted"
+                for path in paths:
+                    if path!="":
+                        myKml.placemarkPath(pathName="path("+str(int(len(path)/29))+")"
+                                            ,coordinates=path,style=lineStyle)
+            
+            """
             pathModified=""
             for coordinate in self.statsUsers[userName][4][1]:
                 thisNode=coordinate[1]+","+coordinate[0]+","\
@@ -192,17 +227,18 @@ class OSMaware(object):
                 +str(heightFactor)+" "
                 pathDeleted+=thisNode
             if len(self.statsUsers[userName][4][2])!=0: pathDeleted=pathDeleted+thisNode
+            """
+            
             #print repr(userName)
             if userName ==None: print "Anonymous users detected"
-            if pathCreated!="":
-                myKml.placemarkPath(pathName="Created("+str(self.statsUsers[userName][1])+")"
-                                    ,coordinates=pathCreated,style="lineStyleCreated")
-            if pathModified!="":
-                myKml.placemarkPath(pathName="Modified("+str(self.statsUsers[userName][2])+")"
-                                   ,coordinates=pathModified,style="lineStyleModified")
-            if pathDeleted!="":
-                myKml.placemarkPath(pathName="Deleted("+str(self.statsUsers[userName][3])+")"
-                                    ,coordinates=pathDeleted,style="lineStyleDeleted")
+            
+
+            #if pathModified!="":
+            #   myKml.placemarkPath(pathName="Modified("+str(self.statsUsers[userName][2])+")"
+            #                       ,coordinates=pathModified,style="lineStyleModified")
+            #if pathDeleted!="":
+            #   myKml.placemarkPath(pathName="Deleted("+str(self.statsUsers[userName][3])+")"
+             #                       ,coordinates=pathDeleted,style="lineStyleDeleted")
             myKml.folderTail()
         myKml.close()
                         
