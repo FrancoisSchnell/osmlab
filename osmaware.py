@@ -1,48 +1,79 @@
-#!/usr/bin/python
-
-################################################################################
-#
-# Author:  francois schnell
-#          francois.schnell@gmail.com  http://francois.schnell.free.fr
+# Author:  francois schnell  (http://francois.schnell.free.fr)
 #                      
-# This script is released under the GPL license v2
+# Released under the GPL license version 2
 #
-# Scans an OSM diff file and extract useful data (a list of Python dictionaries)
-# As a result it outputs a KML file to visualize mapping activity of OSM 
-# ( It is not intended for mapping, just to give an awareness of the OSM activity ) 
-#
-################################################################################
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
 
+"""
+Scans an OSM diff file and extract useful data to create a KML file to visualize
+mapping activity of OSM. 
+It is not intended for mapping, just to give an awareness of the OSM activity. 
+"""
+
+# Python imports
 from xml.etree import ElementTree as ET
 from operator import itemgetter
 import time
 
+# Local imports
 import KML
 
 class OSMaware(object):
     
     """ 
-    A class to extract mapping activity as KML from an OSM diff file
+    Extracts mapping activity as a KML from an OSM diff file
     """
     
     def __init__(self,fileOSM,debug=False,verbose=False):
         
         """
-        Scan the .osc file and gather informations in lists and dictionaries (see code)
+        Scans an .osc file and gather informations in lists and dictionaries
+        
+        Args:
+            An .osc file
+        
+        Resulting instance properties:
+        
+            self.osmData=[]    
+                a list to contain them all
+            self.osmNodes=[]
+                a list containing nodes data (a dictionary per node with
+                the following keys: idNode, type, latitude, 
+                 longitude, timestamp, user)
+            self.statsUsers={}
+                a dict. containing data about the selected user.
+                single key = OSM user name
+                value=  [a,b,c,d,[[x],[y],[z]]]
+                    where:
+                    a= total number of nodes from this user
+                    b= number of created nodes 
+                    c= number of modified nodes
+                    d= number of deleted nodes
+                    [x]= a list of tuples values (lat,long)  for the created nodes
+                    [y]= a list of tuples values (lat,long)  for the modified nodes
+                    [z]= a list of tuples values (lat,long)  for the deleted nodes
+            self.osmWays=[]
+                a list containing basic data about ways (a dict. per way with
+                the following keys: type, idWay, timestamp, user
         """
+        
         # Data structure
         self.osmData=[]    # a list to contain them all
         self.osmNodes=[]   # a list to contain data about nodes (python dictionaries)
         self.osmWays=[]    # a list to contain data about ways (python dictionaries)
         self.statsUsers={} # a dict. to contain data about user's stats
         self.osmData.append(self.osmNodes)
-        self.osmData.append(self.statsUsers)
         self.osmData.append(self.osmWays)
+        self.osmData.append(self.statsUsers)
+        
         # feedback parameters
         self.debug=debug
         self.verbose=verbose
 
-        ## Extracting useful data from the OSM file
+        # Extracting useful data from the OSM file
         print "Parsing OSM file..."     
         tree=ET.parse(fileOSM)
         root=tree.getroot()
@@ -101,14 +132,12 @@ class OSMaware(object):
                                     'timestamp':i.attrib.get("timestamp"),
                                     'user':i.attrib.get("user"),
                                          })
-                    #thisWayNodes=i.getiterator(tag="nd")
 
         #for userName, userStat in self.statsUsers.iteritems(): print userName, userStat
         print "Number of contributors (users):", len(self.statsUsers)
         print "Number of Nodes created, deleted or modified:", len(self.osmNodes)
     
     def globalStats(self,name="Stats Summary"):
-        
         """ 
         Returns an html stats summary (number of users, nodes, ways and a
         table with one raw per user with link to their OSM homepage)
@@ -175,7 +204,9 @@ class OSMaware(object):
             for pathType in [0,1,2]:
                 # Extract created nodes-"path" for this user  
                 heightFactor=1000000
-                distanceThreshold=0.001
+                #distanceThreshold=0.001
+                lonThreshold=0.01
+                latThreshold=0.01
                 #
                 paths=[] # list of cut paths
                 firstNode=True # a loop index
@@ -193,52 +224,33 @@ class OSMaware(object):
                     else:
                         dLon=abs(float(thisLong)-float(prevLong))
                         dLat=abs(float(thisLat)-float(prevLat))
-                        if (dLon) < distanceThreshold \
-                        or (dLat) < distanceThreshold:
+                        if (dLon) < lonThreshold \
+                        or (dLat) < latThreshold:
                             thisPath+=thisNode
-                            prevLat=thisLat
-                            prevLong=thisLong
                             firstNode=False
                         else:
-                            paths.append(thisPath)
+                            paths.append(thisPath+thisNode)
                             thisPath=""
-
-                paths.append(thisPath)
+                        prevLat=thisLat
+                        prevLong=thisLong
+                paths.append(thisPath+thisNode)
+                
                 #print paths            
                 #if len(self.statsUsers[userName][4][0])!=0: pathCreated=pathCreated+thisNode
-                if pathType==0: lineStyle="lineStyleCreated"
-                if pathType==1: lineStyle="lineStyleModified"
-                if pathType==2: lineStyle="lineStyleDeleted"
-                for path in paths:
+                if pathType==0: 
+                    lineStyle="lineStyleCreated"
+                    genre="Created"
+                if pathType==1: 
+                    lineStyle="lineStyleModified"
+                    genre="Modified"
+                if pathType==2: 
+                    lineStyle="lineStyleDeleted"
+                    genre="Deleted"
+                for num,path in enumerate(paths):
                     if path!="":
-                        myKml.placemarkPath(pathName="path("+str(int(len(path)/29))+")"
-                                            ,coordinates=path,style=lineStyle)
-            
-            """
-            pathModified=""
-            for coordinate in self.statsUsers[userName][4][1]:
-                thisNode=coordinate[1]+","+coordinate[0]+","\
-                +str(heightFactor)+" "
-                pathModified+=thisNode
-            if len(self.statsUsers[userName][4][1])!=0: pathModified=pathModified+thisNode
-            pathDeleted=""
-            for coordinate in self.statsUsers[userName][4][2]:
-                thisNode=coordinate[1]+","+coordinate[0]+","\
-                +str(heightFactor)+" "
-                pathDeleted+=thisNode
-            if len(self.statsUsers[userName][4][2])!=0: pathDeleted=pathDeleted+thisNode
-            """
-            
-            #print repr(userName)
-            if userName ==None: print "Anonymous users detected"
-            
-
-            #if pathModified!="":
-            #   myKml.placemarkPath(pathName="Modified("+str(self.statsUsers[userName][2])+")"
-            #                       ,coordinates=pathModified,style="lineStyleModified")
-            #if pathDeleted!="":
-            #   myKml.placemarkPath(pathName="Deleted("+str(self.statsUsers[userName][3])+")"
-             #                       ,coordinates=pathDeleted,style="lineStyleDeleted")
+                        myKml.placemarkPath(pathName=genre+"P"+str(num+1),
+                                            coordinates=path,style=lineStyle)
+            #if userName ==None: print "Anonymous users detected"
             myKml.folderTail()
         myKml.close()
                         
