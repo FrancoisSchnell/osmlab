@@ -38,7 +38,7 @@ class OSMaware(object):
         Resulting instance properties:
         
             self.osmData=[]    
-                a list to contain them all
+                a list to contain them allow (see below)
             self.osmNodes=[]
                 a list containing nodes data (a dictionary per node with
                 the following keys: idNode, type, latitude, 
@@ -167,7 +167,9 @@ class OSMaware(object):
         """ 
         Creates a detailed KML output (one placemark per node)
         placed in 3 folders ("created","modified","deleted")
-        Suitable for reasonnably small osc files
+        Suitable only for reasonably small osc files (not days)
+        Args:
+            
         """
         
         print "Creating KML file..."
@@ -188,9 +190,19 @@ class OSMaware(object):
             myKml.folderTail()
         myKml.close()
         
-    def createKmlV2(self,kmlFileName="output"):
+    def createKmlV2(self,kmlFileName="output",heightFactor=10000,threshold=0.005):
         """
-        A lighter kml version focused on users
+        A 'lighter' kml version focused on users and polygons
+        Args:
+            kmlFileName: 
+                the name of the resulting kml (the osc filename per default)
+            heightFactor:
+                artifical altitude of the nodes (to see them better when far away)
+            threshold:
+                lat or long detla to link together the nodes (they aer not ways) to 
+                better visualize that this nodes belong to the same user. 
+        Output:
+            Creates a kml file
         """
         
         print "Creating KML file..."
@@ -203,10 +215,9 @@ class OSMaware(object):
                              +"("+str(self.statsUsers[userName][0])+")]]>")
             for pathType in [0,1,2]:
                 # Extract created nodes-"path" for this user  
-                heightFactor=1000000
                 #distanceThreshold=0.001
-                lonThreshold=0.01
-                latThreshold=0.01
+                lonThreshold=threshold
+                latThreshold=threshold
                 #
                 paths=[] # list of cut paths
                 firstNode=True # a loop index
@@ -216,21 +227,21 @@ class OSMaware(object):
                     thisLong=coordinate[1]
                     thisNode=thisLong+","+thisLat+","\
                     +str(heightFactor)+" "
-                    if firstNode:
+                    if firstNode==True:
                         thisPath+=thisNode
                         prevLat=thisLat
                         prevLong=thisLong
                         firstNode=False
                     else:
+                        #distanceThreshold=sqrt((thisLat-prevLat)**2 + (thisLong-prevLong)**2) 
                         dLon=abs(float(thisLong)-float(prevLong))
                         dLat=abs(float(thisLat)-float(prevLat))
-                        if (dLon) < lonThreshold \
-                        or (dLat) < latThreshold:
-                            thisPath+=thisNode
-                            firstNode=False
-                        else:
-                            paths.append(thisPath+thisNode)
+                        if (dLon > lonThreshold) and (dLat > latThreshold):
+                            #print dLat,
+                            paths.append(thisPath)
                             thisPath=""
+                        elif (dLon < lonThreshold) and (dLat < latThreshold):
+                            thisPath+=thisNode
                         prevLat=thisLat
                         prevLong=thisLong
                 paths.append(thisPath+thisNode)
@@ -246,10 +257,12 @@ class OSMaware(object):
                 if pathType==2: 
                     lineStyle="lineStyleDeleted"
                     genre="Deleted"
-                for num,path in enumerate(paths):
+                trackCut=1
+                for path in paths:
                     if path!="":
-                        myKml.placemarkPath(pathName=genre+"P"+str(num+1),
+                        myKml.placemarkPath(pathName=genre+"P"+str(trackCut),
                                             coordinates=path,style=lineStyle)
+                        trackCut+=1
             #if userName ==None: print "Anonymous users detected"
             myKml.folderTail()
         myKml.close()
