@@ -27,13 +27,14 @@ class OSMaware(object):
     Extracts mapping activity as a KML from an OSM diff file
     """
     
-    def __init__(self,fileOSM,debug=False,verbose=False):
+    def __init__(self,fileOSM,debug=False,verbose=False,ele="10000"):
         
         """
         Scans an .osc file and gather informations in lists and dictionaries
         
         Args:
             An .osc file
+            ele: lines elevation used in certain kml (0 to the ground)
         
         Resulting instance properties:
         
@@ -59,7 +60,8 @@ class OSMaware(object):
                 a list containing basic data about ways (a dict. per way with
                 the following keys: type, idWay, timestamp, user
         """
-        
+        # elevation used in some kml
+        self.linesElevation=ele 
         # Data structure
         self.osmData=[]    # a list to contain them all
         self.osmNodes=[]   # a list to contain data about nodes (python dictionaries)
@@ -214,13 +216,13 @@ class OSMaware(object):
             myKml.folderHead("<![CDATA["+unicode(userName)\
                              +"("+str(self.statsUsers[userName][0])+")]]>")
             for pathType in [0,1,2]:
-                # Extract created nodes-"path" for this user  
-                #distanceThreshold=0.001
+                ## Extract created nodes-"path" for this user  
+                # cut subpaths if next node is above the threshold 
                 lonThreshold=threshold
                 latThreshold=threshold
                 #
                 paths=[] # list of cut paths
-                firstNode=True # a loop index
+                firstNode=True 
                 thisPath=""
                 for coordinate in self.statsUsers[userName][4][pathType]:
                     thisLat=coordinate[0]
@@ -284,6 +286,8 @@ if __name__=="__main__":
                       help="KML output filename (without the .kml extension)")
     parser.add_option("-k", "--kmlversion",dest="kmlVersion",
                       help="KML version desired (characterized by a number, see website)")
+    parser.add_option("-e", "--elevation",dest="linesElevation",
+                      help="Elevation desired for certain kml genre (lines)")
     (options,args)=parser.parse_args()
     if options.osmInput==None:
         print "I need an .osc file, type -h for help"
@@ -315,10 +319,10 @@ if __name__=="__main__":
         
     if options.kmlOutput==None: options.kmlOutput=os.path.basename(options.osmInput).rstrip(".osc")
         
-    myAwareness=OSMaware(options.osmInput,debug=False,verbose=False)
+    myAwareness=OSMaware(options.osmInput,debug=False,verbose=False,ele=options.linesElevation)
     
     if options.kmlVersion=="2":
-        myAwareness.createKmlV2(options.kmlOutput)
+        myAwareness.createKmlV2(options.kmlOutput,heightFactor=myAwareness.linesElevation)
     else:
         myAwareness.createKmlV1(options.kmlOutput)
     
