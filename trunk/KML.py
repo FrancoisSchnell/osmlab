@@ -1,24 +1,39 @@
-#!/usr/bin/python
-
-################################################################################
+# Author:  francois schnell  (http://francois.schnell.free.fr)
+#                      
+# Released under the GPL license version 2
 #
-# Author: francois.schnell  francois.schnell@gmail.com
-#                           http://francois.schnell.free.fr  
-# This script is released under the GPL license v2
-#
-# A module to create a KML (in particular for OSM aware)
-################################################################################
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
 
 class KML(object):
     """ 
-    Creates a KML file (in particular for OSMaware script)
+    Creates a KML file (in particular for the OSMaware app.)
     """
     
-    def __init__(self,name="default_name"):
+    def __init__(self,name="default_name",
+                 lineColor1="cc00ffff", polyColor1="0000ffff",width1="2",
+                 lineColor2="ccff0000", polyColor2="00ff0000",width2="3",
+                 lineColor3="cc0000ff", polyColor3="000000ff",width3="4",
+                 urlIcon1="http://maps.google.com/mapfiles/kml/pushpin/ylw-pushpin.png",
+                 urlIcon2="http://maps.google.com/mapfiles/kml/pushpin/blue-pushpin.png",
+                 urlIcon3="http://maps.google.com/mapfiles/kml/pushpin/red-pushpin.png"):
         """
         Create and write the KML head 
+        Args:
+            1: line and polystyle color and width for created nodes
+            2: line and polystyle color and width for modified nodes
+            3: line and polystyle color and width for deleted nodes
+            colors are hexBinary value: aabbggrr 
+                                (where aa is alpha value
+                                       bb is blue value
+                                       gg is green value
+                                       rr is red value)   
         """
+        
         self.f=open(name+".kml","wb")
+        
         kmlHead_p1=u"""<?xml version="1.0" encoding="UTF-8"?>
 <kml xmlns="http://earth.google.com/kml/2.1">
 <Document>
@@ -27,28 +42,28 @@ class KML(object):
         kmlHead_p2="""
 <Style id="lineStyleCreated">
 <PolyStyle>
-<color>4400ffff</color>
+<color>"""+polyColor1+"""</color>
 </PolyStyle>
 <LineStyle>
-<color>cc00ffff</color>
+<color>"""+lineColor1+"""</color>
 <width>2</width>
 </LineStyle>
 </Style>
 <Style id="lineStyleModified">
 <PolyStyle>
-<color>44ff0000</color>
+<color>"""+polyColor2+"""</color>
 </PolyStyle>
 <LineStyle>
-<color>ccff0000</color>
+<color>"""+lineColor2+"""</color>
 <width>3</width>
 </LineStyle>
 </Style>
 <Style id="lineStyleDeleted">
 <PolyStyle>
-<color>440000ff</color>
+<color>"""+polyColor3+"""</color>
 </PolyStyle>
 <LineStyle>
-<color>cc0000ff</color>
+<color>"""+lineColor3+"""</color>
 <width>4</width>
 </LineStyle>
 </Style>
@@ -56,33 +71,33 @@ class KML(object):
 <IconStyle>
 <scale>1.3</scale>
 <Icon>
-<href>http://maps.google.com/mapfiles/kml/pushpin/ylw-pushpin.png</href>
+<href>"""+urlIcon1+"""</href>
 </Icon>
 <hotSpot x="20" y="2" xunits="pixels" yunits="pixels"/>
 </IconStyle>
-</Style>
-<Style id="sh_red-pushpin">
-<IconStyle>
-<scale>1.3</scale>
-<Icon>
-<href>http://maps.google.com/mapfiles/kml/pushpin/red-pushpin.png</href>
-</Icon>
-<hotSpot x="20" y="2" xunits="pixels" yunits="pixels"/>
-</IconStyle>
-<ListStyle>
-    </ListStyle>
 </Style>
 <Style id="sh_blue-pushpin">
 <IconStyle>
 <scale>1.3</scale>
 <Icon>
-<href>http://maps.google.com/mapfiles/kml/pushpin/blue-pushpin.png</href>
+<href>"""+urlIcon2+"""</href>
 </Icon>
 <hotSpot x="20" y="2" xunits="pixels" yunits="pixels"/>
 </IconStyle>
 <ListStyle>
 </ListStyle>
 </Style> 
+<Style id="sh_red-pushpin">
+<IconStyle>
+<scale>1.3</scale>
+<Icon>
+<href>"""+urlIcon3+"""</href>
+</Icon>
+<hotSpot x="20" y="2" xunits="pixels" yunits="pixels"/>
+</IconStyle>
+<ListStyle>
+    </ListStyle>
+</Style>
 """
         kmlHead=kmlHead_p1+kmlHead_p2
         self.f.write(kmlHead.encode("utf-8"))
@@ -90,6 +105,13 @@ class KML(object):
     def placemark(self,latitude="0",longitude="0",idNode="0",user="",timestamp="",type=""):
         """ 
         Create and write a placemark at given latitude/longitude
+        Args:
+            - latitude
+            - longitude
+            - node id in OSM
+            - user name
+            - timestamp
+            - type of node (created, modified, deleted)
         """
         
         if type=="create": placemarkStyle="sh_ylw-pushpin"
@@ -114,7 +136,10 @@ class KML(object):
     def placemarkDescriptive(self,description="",name="Stats"):
         """ 
         Create and write a description  with the given
-        html in the description argument (no need for lat/long) and the name
+        html content in the description argument (no need for lat/long)
+        Args:
+            descrition (HTML or text)
+            name/title of the description
         """
         content=u"\n<name>"+name+"</name>\n"\
         +"<Snippet maxLines='0'></Snippet>\n"\
@@ -126,7 +151,11 @@ class KML(object):
         
     def placemarkPath(self,pathName,coordinates,style="lineStyleCreated"):
         """
-        Creates a placemark to show a path (coordinates)
+        Creates and writes a placemark to show a path (a bunch of coordinates)
+        Args:
+         pathName: name of the path
+         coordinates: a string of the from 'lat,lon,height lat,lon,height ...'
+         style: the style to use (see KML head)
         """
         
         content=u"<Placemark>\n<name>"+unicode(pathName)+"</name>\n"\
@@ -137,17 +166,22 @@ class KML(object):
         
     def folderHead(self,folderName):
         """
-        Begin a new folder
+        Create and write the beginning of a new folder
+        Args:
+            folderName: name of the folder
         """
         folderTags=u"\n<Folder>\n<name>"+folderName+"</name>\n"
         self.f.write(folderTags.encode("utf-8"))
     
     def folderTail(self):
+        """
+        Create and write the head of a folder
+        """
         folderTags=u"\n</Folder>\n"
         self.f.write(folderTags.encode("utf-8"))
         
     def close(self):
-        """Ending of the kml file"""
+        """Create and write the end of a kml file"""
         print "Close kml..."
         kmlTail=u"\n</Document>\n</kml>"
         #self.f.write(kmlTail)
@@ -155,7 +189,7 @@ class KML(object):
         self.f.close()
     
 if __name__=="__main__":
-    print "Engaging..."
+    print "Engaging kml test..."
     myKml=KML("kmltest")
     myKml.placemark(latitude="47.258",longitude="7.12354",idNode="ID123456",
                     user="toto",timestamp="1erjanvier")
