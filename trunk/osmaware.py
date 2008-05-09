@@ -292,7 +292,9 @@ if __name__=="__main__":
     if options.osmInput==None:
         print "I need an .osc file, type -h for help"
         sys.exit(1)
-    
+    # if no elevations is given lets assume 10 km per default for v2 kml    
+    if options.linesElevation==None: options.linesElevation="100000"
+        
     # If an OSM HTML location is given in input fetch it first (wget must be in your path or current folder)
     if (options.osmInput.find("http://")!=-1):
         print "Found http input, attempting to retrieve the distant file..."
@@ -306,11 +308,15 @@ if __name__=="__main__":
     # If bz2 or gz archive is detected uncompress to osc file (using 7zip CLI on win)
     if (options.osmInput.find(".bz2")>0) or (options.osmInput.find(".BZ2")>0)\
         or (options.osmInput.find(".gz")>0) or (options.osmInput.find(".GZ")>0):
+        print "*",options.osmInput,"*"
         archiveType=options.osmInput.split(".")[-1]
         print "Trying to uncompress the archive of type ."+archiveType
         if sys.platform == 'win32':
             # 7za.exe must be installed in the app folder
-            os.system('7za.exe x -y -o"%s" "%s" ' % (os.path.dirname(options.osmInput),options.osmInput))
+            if os.path.dirname(options.osmInput)=="":
+                os.system('7za.exe x -y "%s"' % (options.osmInput))
+            else:
+                os.system('7za.exe x -y "%s" -o"%s"  ' % (options.osmInput,os.path.dirname(options.osmInput)))
         if (sys.platform.find("darwin")!=-1) or (sys.platform.find("linux")!=-1):
             os.system('bzip2 -d "%s"' % options.osmInput)
         
