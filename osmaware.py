@@ -177,7 +177,7 @@ class OSMaware(object):
         print "Creating KML file..."
         myKml=KML.KML(kmlFileName)
         statsDescription=self.globalStats()
-        myKml.placemarkDescriptive(description=statsDescription,name=kmlFileName)
+        myKml.placemarkDescriptive(description=statsDescription,name=myKml.kmlTitle)
         
         for aType in ["create","modify","delete"]:  
             myKml.folderHead(aType)
@@ -210,7 +210,7 @@ class OSMaware(object):
         print "Creating KML file..."
         myKml=KML.KML(kmlFileName)
         statsDescription=self.globalStats()
-        myKml.placemarkDescriptive(description=statsDescription,name=kmlFileName)
+        myKml.placemarkDescriptive(description=statsDescription,name=myKml.kmlTitle)
         
         for userName, userStat in sorted(self.statsUsers.iteritems()):
             myKml.folderHead("<![CDATA["+unicode(userName)\

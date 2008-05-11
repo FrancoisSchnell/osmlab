@@ -12,7 +12,7 @@ class KML(object):
     Creates a KML file (in particular for the OSMaware app.)
     """
     
-    def __init__(self,name="default_name",
+    def __init__(self,name="default",
                  lineColor1="cc00ffff", polyColor1="0000ffff",width1="2",
                  lineColor2="ccff0000", polyColor2="00ff0000",width2="3",
                  lineColor3="cc0000ff", polyColor3="000000ff",width3="4",
@@ -33,11 +33,19 @@ class KML(object):
         """
         
         self.f=open(name+".kml","wb")
-        
+    
+        # set kml title (get the filename only if a path was given)
+        if name.find("\\")>0:
+            self.kmlTitle=name.split("\\")[-1:][0]
+        elif name.find("/")>0:
+            self.kmlTitle=name.split("/")[-1:][0]
+        else:
+            self.kmlTitle=name
+    
         kmlHead_p1=u"""<?xml version="1.0" encoding="UTF-8"?>
 <kml xmlns="http://earth.google.com/kml/2.1">
 <Document>
-<name>"""+name+"""</name>"""
+<name>"""+self.kmlTitle+"""</name>"""
 
         kmlHead_p2="""
 <Style id="lineStyleCreated">
@@ -133,7 +141,7 @@ class KML(object):
         + "<Point> <coordinates>"+longitude+","+latitude+",0</coordinates></Point>\n</Placemark>\n"
         self.f.write(content.encode("utf-8"))
     
-    def placemarkDescriptive(self,description="",name="Stats"):
+    def placemarkDescriptive(self,description="",name="default"):
         """ 
         Create and write a description  with the given
         html content in the description argument (no need for lat/long)
