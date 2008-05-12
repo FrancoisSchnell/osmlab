@@ -346,7 +346,10 @@ if __name__=="__main__":
             else:
                 os.system('7za.exe x -y "%s" -o"%s"  ' % (options.osmInput,os.path.dirname(options.osmInput)))
         if (sys.platform.find("darwin")!=-1) or (sys.platform.find("linux")!=-1):
-            os.system('bzip2 -d "%s"' % options.osmInput)
+            if archiveType=="gz" or archiveType=="GZ":
+                os.system('gunzip "%s"' % options.osmInput)
+            elif archiveType=="bz2" or archiveType=="BZ2":
+                os.system('bzip2 -d "%s"' % options.osmInput)
         
         options.osmInput=options.osmInput.rstrip("."+archiveType)
         print "File uncompressed: ", options.osmInput
