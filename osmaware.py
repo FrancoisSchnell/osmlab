@@ -21,12 +21,10 @@ import time
 # Local imports
 import KML
 
-class OSMaware(object):
-    
+class OSMaware(object):  
     """ 
     Extracts mapping activity as a KML from an OSM diff file
     """
-    
     def __init__(self,fileOSM,debug=False,verbose=False,ele="10000"):
         
         """
@@ -134,7 +132,6 @@ class OSMaware(object):
                                     'timestamp':i.attrib.get("timestamp"),
                                     'user':i.attrib.get("user"),
                                          })
-
         #for userName, userStat in self.statsUsers.iteritems(): print userName, userStat
         print "Number of contributors (users):", len(self.statsUsers)
         print "Number of Nodes created, deleted or modified:", len(self.osmNodes)
@@ -144,7 +141,6 @@ class OSMaware(object):
         Returns an html stats summary (number of users, nodes, ways and a
         table with one raw per user with link to their OSM homepage)
         """
-        
         print "Creating global stats..."
         stats=u"Total number of users: "+str(len(self.statsUsers))+"<br>"
         stats+=u"Total number of nodes created, deleted or modified: "+ str(len(self.osmNodes))+"<br>"
@@ -162,23 +158,57 @@ class OSMaware(object):
                 stats+="<tr><td>None</td>"
             stats+=u"<td>"+str(u[1][0])+"</td><td>"+str(u[1][1])\
             +"</td><td>"+str(u[1][2])+"</td><td>"+str(u[1][3])+"</tr>"
-        
         return stats
                                         
+    def createKmlV0(self,kmlFileName="output"):
+        """
+        The lightest kml version possible with only one "summarized" placemark
+        per user representing the last known position. 
+        Args:
+            kmlFileName: 
+                the name of the resulting kml (the osc filename per default)
+        Output: 
+            Creates a kml file
+        """
+        print "Creating KML file version 0 ..."
+        myKml=KML.KML(kmlFileName)
+        statsDescription=self.globalStats()
+        myKml.placemarkDescriptive(description=statsDescription,name=myKml.kmlTitle)
+        for userName, userStat in sorted(self.statsUsers.iteritems()):
+            myKml.folderHead("<![CDATA["+unicode(userName)\
+                             +"("+str(self.statsUsers[userName][0])+")]]>")
+            thisLat=0
+            thisLong=0
+            for pathType in [0,1,2]:
+                if len(self.statsUsers[userName][4][pathType])!=0:
+                    thisLat=self.statsUsers[userName][4][pathType][-1][0]
+                    thisLong=self.statsUsers[userName][4][pathType][-1][1]
+                    if pathType==0: 
+                        lineStyle="lineStyleCreated"
+                        type="create"
+                    if pathType==1: 
+                        lineStyle="lineStyleModified"
+                        type="modify"
+                    if pathType==2: 
+                        lineStyle="lineStyleDeleted"
+                        type="delete"
+            userNodesStat=[self.statsUsers[userName][0], self.statsUsers[userName][1],
+                            self.statsUsers[userName][2], self.statsUsers[userName][3]]             
+            myKml.placemarkSummary(thisLat,thisLong,userName,type,userNodesStat)
+            myKml.folderTail()
+        myKml.close()
+        
     def createKmlV1(self,kmlFileName="output"):
         """ 
         Creates a detailed KML output (one placemark per node)
         placed in 3 folders ("created","modified","deleted")
         Suitable only for reasonably small osc files (not days)
-        Args:
-            
+        Args: -output name    
         """
-        
         print "Creating KML file..."
         myKml=KML.KML(kmlFileName)
         statsDescription=self.globalStats()
         myKml.placemarkDescriptive(description=statsDescription,name=myKml.kmlTitle)
-        
         for aType in ["create","modify","delete"]:  
             myKml.folderHead(aType)
             for node in self.osmNodes:
@@ -192,14 +222,12 @@ class OSMaware(object):
             myKml.folderTail()
         myKml.close()
         
-    def createKmlV2(self,kmlFileName="output",heightFactor=10000,threshold=0.005):
+    def createKmlV2(self,kmlFileName="output",heightFactor=0,threshold=0.005):
         """
-        A 'lighter' kml version focused on users and polygons
+        A version based on lines and polygons instead of placemarks
         Args:
             kmlFileName: 
                 the name of the resulting kml (the osc filename per default)
-            heightFactor:
-                artifical altitude of the nodes (to see them better when far away)
             threshold:
                 lat or long detla to link together the nodes (they aer not ways) to 
                 better visualize that this nodes belong to the same user. 
@@ -268,7 +296,7 @@ class OSMaware(object):
             #if userName ==None: print "Anonymous users detected"
             myKml.folderTail()
         myKml.close()
-                        
+                         
 if __name__=="__main__":
     
     """
@@ -318,11 +346,8 @@ if __name__=="__main__":
             else:
                 os.system('7za.exe x -y "%s" -o"%s"  ' % (options.osmInput,os.path.dirname(options.osmInput)))
         if (sys.platform.find("darwin")!=-1) or (sys.platform.find("linux")!=-1):
-            if archiveType=="gz" or archiveType=="GZ":
-                os.system('gunzip "%s"' % options.osmInput)
-            elif archiveType=="bz2" or archiveType=="BZ2":
-                os.system('bzip2 -d "%s"' % options.osmInput)
-
+            os.system('bzip2 -d "%s"' % options.osmInput)
+        
         options.osmInput=options.osmInput.rstrip("."+archiveType)
         print "File uncompressed: ", options.osmInput
         
@@ -332,6 +357,8 @@ if __name__=="__main__":
     
     if options.kmlVersion=="2":
         myAwareness.createKmlV2(options.kmlOutput,heightFactor=myAwareness.linesElevation)
+    elif options.kmlVersion=="0":
+        myAwareness.createKmlV0(options.kmlOutput)
     else:
         myAwareness.createKmlV1(options.kmlOutput)
     
