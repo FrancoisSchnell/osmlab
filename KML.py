@@ -132,7 +132,7 @@ class KML(object):
         else:
             userUrl="<br>Created by: no user found for this node"
         
-        content=u"<Placemark>\n<name>"+user+"</name>"\
+        content=u"<Placemark>\n<name><![CDATA["+user+"]]></name>"\
         + "<description><![CDATA[Node ID= "+idNode+ "<br> Node type= "+type \
         + userUrl\
         +"<br>timestamp: "+timestamp\
@@ -159,7 +159,7 @@ class KML(object):
         else:
             userUrl="<br>Created by: no user found for this node"  
                  
-        content=u"<Placemark>\n<name>"+user+"</name>"\
+        content=u"<Placemark>\n<name><![CDATA["+user+"]]></name>"\
         + "<description><![CDATA[<table border='0' padding='3' width='200' height='170'><tr><td>"\
         +"User: "+userUrl\
         +"<br>Total number of nodes: "+str(userNodesStat[0])\
@@ -181,7 +181,7 @@ class KML(object):
             descrition (HTML or text)
             name/title of the description
         """
-        content=u"\n<name>"+name+"</name>\n"\
+        content=u"\n<name><![CDATA["+name+"]]></name>\n"\
         +"<Snippet maxLines='0'></Snippet>\n"\
         +"<description>\n"\
         +"<![CDATA[\n"\
