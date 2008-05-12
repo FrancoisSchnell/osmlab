@@ -125,6 +125,7 @@ class KML(object):
         if type=="create": placemarkStyle="sh_ylw-pushpin"
         if type=="modify": placemarkStyle="sh_blue-pushpin"
         if type=="delete": placemarkStyle="sh_red-pushpin"
+        if user==None: user="None"
         
         if user!="None": 
             userUrl="<br>Created by <a href='http://www.openstreetmap.org/user/"+user+"'>"+user+"</a>"
@@ -140,7 +141,38 @@ class KML(object):
         +"<styleUrl>#"+placemarkStyle+"</styleUrl>"\
         + "<Point> <coordinates>"+longitude+","+latitude+",0</coordinates></Point>\n</Placemark>\n"
         self.f.write(content.encode("utf-8"))
-    
+
+    def placemarkSummary(self,latitude="0",longitude="0",user="",type="create",userNodesStat=[0,0,0,0]):
+        """
+        Create a 'summary' placemark at a given location 
+        Args:
+            - latitude, longitude, user name, type of node
+            - userNodesStat list containing the total number, created, modified, deleted
+        """
+        if type=="create": placemarkStyle="sh_ylw-pushpin"
+        if type=="modify": placemarkStyle="sh_blue-pushpin"
+        if type=="delete": placemarkStyle="sh_red-pushpin"
+        if user==None: user="None"
+        
+        if user!="None": 
+            userUrl="<a href='http://www.openstreetmap.org/user/"+user+"'>"+user+"</a>"
+        else:
+            userUrl="<br>Created by: no user found for this node"  
+                 
+        content=u"<Placemark>\n<name>"+user+"</name>"\
+        + "<description><![CDATA[<table border='0' padding='3' width='200' height='170'><tr><td>"\
+        +"User: "+userUrl\
+        +"<br>Total number of nodes: "+str(userNodesStat[0])\
+        +"<br>Nodes created: "+str(userNodesStat[1])\
+        +"<br>Nodes modified: "+str(userNodesStat[2])\
+        +"<br>Nodes deleted: "+str(userNodesStat[3])\
+        +"<br>Last position: "+str(latitude)+" , "+str(longitude)\
+        +"<br>See on <a href='http://www.openstreetmap.org/?lat="+str(latitude)+"&lon="+str(longitude)+"&zoom=16'>"\
+        +"OSM map</a> <br> </td></tr></table>]]></description>\n"\
+        +"<styleUrl>#"+placemarkStyle+"</styleUrl>"\
+        + "<Point> <coordinates>"+str(longitude)+","+str(latitude)+",0</coordinates></Point>\n</Placemark>\n"
+        self.f.write(content.encode("utf-8"))        
+        
     def placemarkDescriptive(self,description="",name="default"):
         """ 
         Create and write a description  with the given
@@ -156,7 +188,7 @@ class KML(object):
         +"<table border='1' padding='3' width='600'><tr><td> "+ description\
         + "</td></tr></table>"+"\n]]>\n</description>\n"
         self.f.write(content.encode("utf-8"))
-        
+    
     def placemarkPath(self,pathName,coordinates,style="lineStyleCreated"):
         """
         Creates and writes a placemark to show a path (a bunch of coordinates)
@@ -165,7 +197,6 @@ class KML(object):
          coordinates: a string of the from 'lat,lon,height lat,lon,height ...'
          style: the style to use (see KML head)
         """
-        
         content=u"<Placemark>\n<name>"+unicode(pathName)+"</name>\n"\
         +"<styleUrl>#"+style+"</styleUrl>\n<LineString>\n<tessellate>1</tessellate>\n"\
         +"<altitudeMode>relativeToGround</altitudeMode>\n<extrude>1</extrude>\n"\
