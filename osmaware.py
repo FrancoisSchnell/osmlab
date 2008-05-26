@@ -374,7 +374,7 @@ if __name__=="__main__":
     parser.setContentHandler(myAwareness)
     t0=datetime.now()
     print "Starting parsing OSM file..."
-    parser.parse(options.osmInput);
+    parser.parse(options.osmInput)
 
     #for userName, userStat in self.statsUsers.iteritems(): print userName, userStat
     print "Number of contributors (users):", len(myAwareness.statsUsers)
