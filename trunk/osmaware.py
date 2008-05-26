@@ -1,5 +1,8 @@
-# Author:  francois schnell  (http://francois.schnell.free.fr)
-#                      
+# Main author:  francois schnell  (http://francois.schnell.free.fr)
+#           
+# Contributor: "awp.monkey" for his SAX patch to allow a quicker and much smaller 
+#              memory footprint on big files (see issue1 on project's website)
+#       
 # Released under the GPL license version 2
 #
 # This program is distributed in the hope that it will be useful,
@@ -14,24 +17,26 @@ It is not intended for mapping, just to give an awareness of the OSM activity.
 """
 
 # Python imports
-from xml.etree import ElementTree as ET
+from xml.sax import make_parser
+from xml.sax.handler import ContentHandler 
 from operator import itemgetter
 import time
+from datetime import datetime
 
 # Local imports
 import KML
 
-class OSMaware(object):  
+class OSMaware(ContentHandler):  
     """ 
     Extracts mapping activity as a KML from an OSM diff file
+    (This is the contentHandler for a SAX parser)
     """
-    def __init__(self,fileOSM,debug=False,verbose=False,ele="10000"):
+    def __init__(self,debug=False,verbose=False,ele="10000",kml_version=0):
         
         """
         Scans an .osc file and gather informations in lists and dictionaries
         
         Args:
-            An .osc file
             ele: lines elevation used in certain kml (0 to the ground)
         
         Resulting instance properties:
@@ -68,73 +73,80 @@ class OSMaware(object):
         self.osmData.append(self.osmNodes)
         self.osmData.append(self.osmWays)
         self.osmData.append(self.statsUsers)
+
+        self.nodeCount = 0
+        self.wayCount = 0
+        self.relationCount = 0;
         
         # feedback parameters
         self.debug=debug
         self.verbose=verbose
+        self.kml_version = kml_version
 
-        # Extracting useful data from the OSM file
-        print "Parsing OSM file..."     
-        tree=ET.parse(fileOSM)
-        root=tree.getroot()
-                   
-        for tag in root:
-            if self.debug: 
-                time.sleep(0.1)
-                print "Element: ",tag, "Type=", tag.tag
-            aNodeList=tag.findall("node")
-            if len(aNodeList) !=0: 
-                if self.debug: print "Elements of type 'node': ", aNodeList
-                
-                # Creating nodes list and user's stats
-                for i in aNodeList:
-                    if self.debug:
-                        print "Type=", tag.tag,
-                        print "ID node=",i.attrib.get("id"),
-                        print "latitude=",i.attrib.get("lat"),
-                        print "longitude=",i.attrib.get("lon"),
-                        print "timestamp=",i.attrib.get("timestamp"),
-                        print repr("user=",i.attrib.get("user"))
-                    self.osmNodes.append({
-                                 'idNode':i.attrib.get("id"),
-                                 'type':tag.tag,
-                                 'latitude':i.attrib.get("lat"),
-                                 'longitude':i.attrib.get("lon"),
-                                 'timestamp':i.attrib.get("timestamp"),
-                                 'user':i.attrib.get("user"),
-                                 })
+    def startElement(self, name, attrs):
+        """ Analyse XML element each time it is given by the SAX Parser"""
+      
+        # If elements of type create, modify or delete found will know the type
+        # of next "nodes" element encounter (return)
+    	if name == "create" :
+    		self.edit_type = "create"
+    		return
+    	if name == "modify" :
+    		self.edit_type = "modify"
+    		return
+    	if name == "delete" :
+    		self.edit_type = "delete"
+    		return
+  
+        # Analyse element of type "node"
+    	if name == "node":
+            if self.debug:
+                print "Type=", self.edit_type,
+                print "ID node=",attrs.get("id"),
+                print "latitude=",attrs.get("lat"),
+                print "longitude=",attrs.get("lon"),
+                print "timestamp=",attrs.get("timestamp"),
+                print repr("user=",attrs.get("user"))
+            if self.kml_version == "1" :
+                self.osmNodes.append({
+                    'idNode':attrs.get("id"),
+                    'type':self.edit_type,
+                    'latitude':attrs.get("lat"),
+                    'longitude':attrs.get("lon"),
+                    'timestamp':attrs.get("timestamp"),
+                    'user':attrs.get("user"),
+                    })
                     
-                    # Creating user's stats for nodes
-                    user=i.attrib.get("user")
-                    nodeType=tag.tag
-                    if self.statsUsers.has_key(user)==False:
-                        #total,created,modified,deleted nodes and list of positions for this user
-                        self.statsUsers[user]=[0,0,0,0,[[],[],[]]]
-                    if self.statsUsers.has_key(user):
-                        self.statsUsers[user][0]+=1
-                        if nodeType=="create": 
-                            self.statsUsers[user][1]+=1
-                            self.statsUsers[user][4][0].append((i.attrib.get("lat"),i.attrib.get("lon")))
-                        if nodeType=="modify": 
-                            self.statsUsers[user][2]+=1
-                            self.statsUsers[user][4][1].append((i.attrib.get("lat"),i.attrib.get("lon")))
-                        if nodeType=="delete": 
-                            self.statsUsers[user][3]+=1
-                            self.statsUsers[user][4][2].append((i.attrib.get("lat"),i.attrib.get("lon")))
-                                                
-            # Creating ways list
-            aWayList=tag.findall("way")
-            if len(aWayList) != 0:
-                for i in aWayList:
-                    self.osmWays.append({
-                                    'type':tag.tag,
-                                    'idWay':i.attrib.get("id"),
-                                    'timestamp':i.attrib.get("timestamp"),
-                                    'user':i.attrib.get("user"),
-                                         })
-        #for userName, userStat in self.statsUsers.iteritems(): print userName, userStat
-        print "Number of contributors (users):", len(self.statsUsers)
-        print "Number of Nodes created, deleted or modified:", len(self.osmNodes)
+            # Creating user's stats for nodes
+            user=attrs.get("user")
+            nodeType=self.edit_type
+            if self.statsUsers.has_key(user)==False:
+                #total,created,modified,deleted nodes and list of positions for this user
+                self.statsUsers[user]=[0,0,0,0,[[],[],[]]]
+            if self.statsUsers.has_key(user):
+                self.nodeCount += 1
+                self.statsUsers[user][0]+=1
+                if nodeType=="create": 
+                    self.statsUsers[user][1]+=1
+                    self.statsUsers[user][4][0].append((attrs.get("lat"),attrs.get("lon")))
+                if nodeType=="modify": 
+                    self.statsUsers[user][2]+=1
+                    self.statsUsers[user][4][1].append((attrs.get("lat"),attrs.get("lon")))
+                if nodeType=="delete": 
+                    self.statsUsers[user][3]+=1
+                    self.statsUsers[user][4][2].append((attrs.get("lat"),attrs.get("lon")))
+        if name == "way" :
+            self.wayCount += 1
+            if (self.kml_version == "1") :
+                self.osmWays.append({
+                    'type':self.edit_type,
+                    'idWay':attrs.get("id"),
+                    'timestamp':attrs.get("timestamp"),
+                    'user':attrs.get("user"),
+                    })
+        # Basic stats about the number of relations
+        if name == "relation" :
+            self.relationCount += 1
     
     def globalStats(self,name="Stats Summary"):
         """ 
@@ -355,15 +367,26 @@ if __name__=="__main__":
         print "File uncompressed: ", options.osmInput
         
     if options.kmlOutput==None: options.kmlOutput=os.path.basename(options.osmInput).rstrip(".osc")
-        
-    myAwareness=OSMaware(options.osmInput,debug=False,verbose=False,ele=options.linesElevation)
+    if options.kmlVersion==None: options.kmlVersion="1"
     
+    myAwareness=OSMaware(debug=False,verbose=False,ele=options.linesElevation, kml_version=options.kmlVersion)
+    parser = make_parser()
+    parser.setContentHandler(myAwareness)
+    t0=datetime.now()
+    print "Starting parsing OSM file..."
+    parser.parse(options.osmInput);
+
+    #for userName, userStat in self.statsUsers.iteritems(): print userName, userStat
+    print "Number of contributors (users):", len(myAwareness.statsUsers)
+    print "Number of Nodes created, deleted or modified:", myAwareness.nodeCount
+    print "Number of Ways created, deleted or modified:", myAwareness.wayCount
+    print "Number of Realations created, deleted or modified:", myAwareness.relationCount
+  
     if options.kmlVersion=="2":
         myAwareness.createKmlV2(options.kmlOutput,heightFactor=myAwareness.linesElevation)
-    elif options.kmlVersion=="0":
-        myAwareness.createKmlV0(options.kmlOutput)
-    else:
+    if options.kmlVersion=="1":
         myAwareness.createKmlV1(options.kmlOutput)
+    if options.kmlVersion=="0":
+        myAwareness.createKmlV0(options.kmlOutput)
     
-    print "Finished"
-    
+    print "Finished (took",(datetime.now()-t0).seconds,"seconds)"
