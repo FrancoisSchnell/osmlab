@@ -1,7 +1,8 @@
-# Main author:  francois schnell  (http://francois.schnell.free.fr)
+# Author:       francois schnell  (http://francois.schnell.free.fr)
 #           
-# Contributor: "awp.monkey" for his SAX patch to allow a quicker and much smaller 
-#              memory footprint on big files (see issue1 on project's website)
+# Contributor: "awp.monkey" for a SAX patch (instead of ElementTree parsing)
+#              to allow a smaller memory footprint on big files 
+#              (see issue1 on project's website)
 #       
 # Released under the GPL license version 2
 #
