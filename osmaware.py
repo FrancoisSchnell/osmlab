@@ -68,9 +68,9 @@ class OSMaware(ContentHandler):
         self.linesElevation=ele 
         # Data structure
         self.osmData=[]    # a list to contain them all
-        self.osmNodes=[]   # a list to contain data about nodes (python dictionaries)
-        self.osmWays=[]    # a list to contain data about ways (python dictionaries)
-        self.statsUsers={} # a dict. to contain data about user's stats
+        self.osmNodes=[]   # for kml v1 only: a list containing all nodes (Python dictionaries)
+        self.osmWays=[]    # a list to contain data about ways (Python dictionaries)
+        self.statsUsers={} # a dict. containing nodes and data relative to each user (key)
         self.osmData.append(self.osmNodes)
         self.osmData.append(self.osmWays)
         self.osmData.append(self.statsUsers)
