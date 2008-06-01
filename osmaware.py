@@ -44,7 +44,7 @@ class OSMaware(ContentHandler):
         
             self.osmData=[]    
                 a list to contain them allow (see below)
-            self.osmNodes=[]
+            self.osmNodes=[] (Only for kml v. 1 to minimize memory footprint)
                 a list containing nodes data (a dictionary per node with
                 the following keys: idNode, type, latitude, 
                  longitude, timestamp, user)
@@ -156,8 +156,8 @@ class OSMaware(ContentHandler):
         """
         print "Creating global stats..."
         stats=u"Total number of users: "+str(len(self.statsUsers))+"<br>"
-        stats+=u"Total number of nodes created, deleted or modified: "+ str(len(self.osmNodes))+"<br>"
-        stats+=u"Total number of ways created, deleted or modified: "+ str(len(self.osmWays))+"<br><br>"
+        stats+=u"Total number of nodes created, deleted or modified: "+ str(self.nodeCount)+"<br>"
+        stats+=u"Total number of ways created, deleted or modified: "+ str(self.wayCount)+"<br><br>"
         stats+="<table border='1' padding='3' width='600'>"
         stats+="<tr><td>Author</td><td>Total (nodes)</td><td>Created</td><td>Modified</td><td>Deleted</td></tr>"
         
