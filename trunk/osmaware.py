@@ -265,6 +265,7 @@ class OSMaware(ContentHandler):
                 paths=[] # list of cut paths
                 firstNode=True 
                 thisPath=""
+                thisNode=""
                 for coordinate in self.statsUsers[userName][4][pathType]:
                     thisLat=coordinate[0]
                     thisLong=coordinate[1]
