@@ -5,8 +5,8 @@ KMLs are available in three versions:
 * V1 is the most detailed version with one placemark per node but produces big KMLs.
 * V2 shows all the nodes but in the form of polygons instead of placemarks and is "lighter" than V1.
 
-<a href="http://farm3.static.flickr.com/2291/2486256508_8de573fbfa_o.png"><img src="http://farm3.static.flickr.com/2291/2486256508_8de573fbfa_o.png" width="200" height="150">  </a>
-<a href="http://farm3.static.flickr.com/2253/2460169592_c771287306_o.png"><img src="http://farm3.static.flickr.com/2253/2460169592_c771287306_o.png" width="200" height="150">  </a>
+<a href="http://farm3.static.flickr.com/2291/2486256508_c2ca194763_m.jpg"><img  src="http://farm3.static.flickr.com/2291/2486256508_c2ca194763_m.jpg" width="200" height="150">  </a>
+<a href="http://farm3.static.flickr.com/2253/2460169592_b9532d4cc8_m.jpg"><img src="http://farm3.static.flickr.com/2253/2460169592_b9532d4cc8_m.jpg" width="200" height="150">  </a>
 <a href="http://farm4.static.flickr.com/3288/2493493984_77cd3ba75b_m.jpg"><img src="http://farm4.static.flickr.com/3288/2493493984_77cd3ba75b_m.jpg" width="200" height="150">  </a>
 
 <a href="http://farm4.static.flickr.com/3082/2475990682_6f3398ff9e_m.jpg" width="200" height="150"><img src="http://farm4.static.flickr.com/3082/2475990682_6f3398ff9e_m.jpg">  </a>
