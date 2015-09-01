@@ -1,4 +1,4 @@
-2008 : OSMaware is a Python command-line tool  which takes an OSM .osc file (a change set in OSM map over time) and produces a KML file of the mappers activity.
+As of 2008: OSMaware is a Python command-line tool  which takes an OSM .osc file (a change set in OSM map over time) and produces a KML file of the mappers activity.
 
 KMLs are available in mainly three versions:
 
