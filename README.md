@@ -24,7 +24,9 @@ Warnings:
 
 The KML doesn't show ways. It is not intended to help compare or help mapping but just to be "aware" of mappers activity. For legal reasons do not use any data of Google Earth/Google Maps/etc to help you mapping in Open Street Map
 
+Contributions:
 
+"awp.monkey" for a SAX patch (instead of ElementTree? parsing) to allow a smaller memory footprint on big file for OSMAware (see  issue1  on project's website)
 
 
 
